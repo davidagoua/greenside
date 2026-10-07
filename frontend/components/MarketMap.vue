@@ -1,25 +1,31 @@
 <template>
-  <div class="relative w-full h-full min-h-[400px] rounded-2xl overflow-hidden border border-slate-800">
+  <div class="relative w-full h-full min-h-[400px] border border-cds-border-subtle overflow-hidden">
     <div ref="mapContainer" class="w-full h-full min-h-[400px] z-0"></div>
 
-    <!-- Center position button -->
+    <!-- Recentrer sur la position de recherche -->
     <button
-      @click="recenter"
       type="button"
-      class="absolute bottom-4 right-4 z-10 p-3 bg-slate-900/90 hover:bg-slate-800 text-eco-400 border border-slate-700 rounded-xl shadow-lg backdrop-blur transition"
+      class="absolute bottom-4 right-4 z-10 cds--btn cds--btn--secondary cds--btn--sm"
       title="Recentrer la carte"
+      aria-label="Recentrer la carte"
+      @click="recenter"
     >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
+      <Lineicons :icon="Icons.location" :size="18" color="currentColor" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { Lineicons } from '@lineiconshq/vue-lineicons'
+import { Icons } from '~/utils/icons'
 import type { NearbyListing } from '~/types'
+
+// Icônes de marqueur servies par le bundle (et non par un CDN tiers) :
+// indispensable pour que la carte fonctionne hors ligne en PWA.
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 
 const props = defineProps<{
   centerLat: number
@@ -32,27 +38,52 @@ const emit = defineEmits<{
   (e: 'select-listing', listing: NearbyListing): void
 }>()
 
+const { isDark } = useTheme()
+
 const mapContainer = ref<HTMLElement | null>(null)
 let mapInstance: any = null
 let markersLayer: any = null
 let circleLayer: any = null
+let tileLayer: any = null
+let leaflet: any = null
+
+/** Fond de carte adapté au thème (CARTO, même fournisseur que la règle workbox). */
+const tileUrl = () =>
+  isDark.value
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+
+/**
+ * Leaflet écrit les couleurs en attributs SVG : `var(--cds-*)` n'y est pas
+ * résolu. On lit donc la valeur calculée du jeton pour les tracés canvas/SVG.
+ */
+const token = (name: string, fallback: string): string => {
+  if (typeof window === 'undefined') return fallback
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return value || fallback
+}
+
+const escapeHtml = (value: unknown): string =>
+  String(value ?? '').replace(/[&<>"']/g, (char) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] as string
+  )
 
 const initMap = async () => {
   if (typeof window === 'undefined' || !mapContainer.value) return
   const L = (await import('leaflet')).default
+  leaflet = L
 
-  // Fix leaflet default icons in bundlers
+  // Icônes de marqueur résolues par le bundler
   delete (L.Icon.Default.prototype as any)._getIconUrl
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow
   })
 
   mapInstance = L.map(mapContainer.value).setView([props.centerLat, props.centerLng], 12)
 
-  // Dark/Carto tile layer
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  tileLayer = L.tileLayer(tileUrl(), {
     attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
     maxZoom: 19
   }).addTo(mapInstance)
@@ -60,37 +91,49 @@ const initMap = async () => {
   markersLayer = L.layerGroup().addTo(mapInstance)
   circleLayer = L.layerGroup().addTo(mapInstance)
 
-  updateCircle(L)
-  updateMarkers(L)
+  updateCircle()
+  updateMarkers()
 }
 
-const updateCircle = (L: any) => {
-  if (!circleLayer || !mapInstance) return
+const updateCircle = () => {
+  if (!circleLayer || !mapInstance || !leaflet) return
   circleLayer.clearLayers()
 
-  L.circle([props.centerLat, props.centerLng], {
-    color: '#059669',
-    fillColor: '#10b981',
-    fillOpacity: 0.12,
-    radius: props.radiusKm * 1000
-  }).addTo(circleLayer)
+  const stroke = token('--cds-support-success', '#24a148')
+
+  leaflet
+    .circle([props.centerLat, props.centerLng], {
+      color: stroke,
+      fillColor: stroke,
+      fillOpacity: 0.12,
+      radius: props.radiusKm * 1000
+    })
+    .addTo(circleLayer)
 }
 
-const updateMarkers = (L: any) => {
-  if (!markersLayer || !mapInstance) return
+const updateMarkers = () => {
+  if (!markersLayer || !mapInstance || !leaflet) return
   markersLayer.clearLayers()
 
-  props.listings.forEach(listing => {
-    const marker = L.marker([listing.lat, listing.lng]).addTo(markersLayer)
-    
+  props.listings.forEach((listing) => {
+    const marker = leaflet.marker([listing.lat, listing.lng]).addTo(markersLayer)
+
+    // Les couleurs utilisent les jetons Carbon : la popup suit le thème actif.
+    const price = listing.is_free_donation
+      ? 'Don gratuit'
+      : `${escapeHtml(listing.price_per_unit)} FCFA / ${escapeHtml(listing.unit)}`
+
     const popupContent = `
-      <div style="font-family: inherit; font-size: 13px; color: #0f172a; padding: 4px;">
-        <p style="font-weight: 700; margin-bottom: 4px;">${listing.title}</p>
-        <p style="margin-bottom: 2px;">📦 <b>${listing.estimated_quantity} ${listing.unit}</b> (${listing.category_name})</p>
-        <p style="margin-bottom: 4px; color: #059669; font-weight: 600;">
-          ${listing.is_free_donation ? 'Don gratuit' : listing.price_per_unit + ' FCFA / ' + listing.unit}
+      <div style="font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 13px; color: var(--cds-text-primary); padding: 2px;">
+        <p style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(listing.title)}</p>
+        <p style="margin-bottom: 2px; color: var(--cds-text-secondary);">
+          <b style="color: var(--cds-text-primary);">${escapeHtml(listing.estimated_quantity)} ${escapeHtml(listing.unit)}</b>
+          &middot; ${escapeHtml(listing.category_name)}
         </p>
-        <p style="font-size: 11px; color: #64748b;">📍 ${listing.distance_km.toFixed(1)} km</p>
+        <p style="margin-bottom: 4px; color: var(--cds-link-primary); font-weight: 600;">${price}</p>
+        <p style="font-size: 11px; color: var(--cds-text-helper);">
+          ${escapeHtml(listing.distance_km?.toFixed(1) ?? '—')} km
+        </p>
       </div>
     `
     marker.bindPopup(popupContent)
@@ -100,7 +143,7 @@ const updateMarkers = (L: any) => {
   })
 }
 
-const recenter = async () => {
+const recenter = () => {
   if (!mapInstance) return
   mapInstance.setView([props.centerLat, props.centerLng], 12)
 }
@@ -109,18 +152,39 @@ onMounted(() => {
   initMap()
 })
 
-watch(() => [props.centerLat, props.centerLng, props.radiusKm], async () => {
-  if (typeof window === 'undefined') return
-  const L = (await import('leaflet')).default
+onBeforeUnmount(() => {
+  // Sans destroy(), l'instance Leaflet et ses écouteurs fuient à chaque navigation
   if (mapInstance) {
-    mapInstance.setView([props.centerLat, props.centerLng])
-    updateCircle(L)
+    mapInstance.remove()
+    mapInstance = null
   }
+  markersLayer = null
+  circleLayer = null
+  tileLayer = null
+  leaflet = null
 })
 
-watch(() => props.listings, async () => {
-  if (typeof window === 'undefined') return
-  const L = (await import('leaflet')).default
-  updateMarkers(L)
-}, { deep: true })
+watch(
+  () => [props.centerLat, props.centerLng, props.radiusKm],
+  () => {
+    if (!mapInstance) return
+    mapInstance.setView([props.centerLat, props.centerLng])
+    updateCircle()
+  }
+)
+
+watch(
+  () => props.listings,
+  () => {
+    updateMarkers()
+  },
+  { deep: true }
+)
+
+// Bascule du fond de carte et des tracés quand l'utilisateur change de thème
+watch(isDark, () => {
+  if (tileLayer) tileLayer.setUrl(tileUrl())
+  updateCircle()
+  updateMarkers()
+})
 </script>

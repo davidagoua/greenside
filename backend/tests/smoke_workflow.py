@@ -33,7 +33,7 @@ async def main() -> None:
 
         async def register(role: str) -> dict:
             r = await c.post(f"{API}/auth/register", json={
-                "email": f"{role}-{sfx}@ecoloop.test", "password": "Secret123", "role": role,
+                "email": f"{role}-{sfx}@ecoloop.io", "password": "Secret123", "role": role,
                 "organization_name": f"{role.title()} SA", "phone": "+221 77 000 00 00",
             })
             assert r.status_code == 201, r.text

@@ -1,9 +1,9 @@
 <template>
   <div class="max-w-3xl mx-auto px-4 py-8">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+    <div class="bg-cds-layer-01 border border-cds-border-subtle p-6 sm:p-8">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-white tracking-tight">Déposer un gisement de déchets</h1>
-        <p class="text-xs text-slate-400 mt-1">
+        <h1 class="text-2xl font-bold text-cds-text-primary tracking-tight">Déposer un gisement de déchets</h1>
+        <p class="text-xs text-cds-text-helper mt-1">
           Renseignez les détails du gisement pour les collecteurs agréés de votre région
         </p>
       </div>
@@ -11,123 +11,144 @@
       <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Title & Category -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Titre de l'annonce</label>
+          <div class="sm:col-span-2 cds--form-item">
+            <label class="cds--label" for="listing-title">Titre de l'annonce</label>
             <input
+              id="listing-title"
               v-model="form.title"
               type="text"
               required
               placeholder="Ex: 500 kg de plastique PET en balles compactées"
-              class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-eco-500 transition"
+              class="cds--text-input"
             />
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Catégorie de matière</label>
-            <select
-              v-model="form.category_id"
-              required
-              class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-eco-500 transition"
-            >
-              <option value="" disabled>Sélectionnez une catégorie</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }} ({{ cat.unit }})
-              </option>
-            </select>
+          <div class="cds--form-item">
+            <label class="cds--label" for="listing-category">Catégorie de matière</label>
+            <div class="cds--select">
+              <div class="cds--select-input__wrapper">
+                <select
+                  id="listing-category"
+                  v-model="form.category_id"
+                  required
+                  class="cds--select-input"
+                >
+                  <option value="" disabled>Sélectionnez une catégorie</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }} ({{ cat.unit }})
+                  </option>
+                </select>
+                <Lineicons class="cds--select__arrow" :icon="Icons.expand" :size="16" color="var(--cds-icon-primary)" />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+          <div class="cds--form-item">
+            <label class="cds--label" for="listing-quantity">
               Quantité estimée ({{ selectedCategoryUnit }})
             </label>
             <input
+              id="listing-quantity"
               v-model.number="form.estimated_quantity"
               type="number"
               step="0.01"
               min="0.1"
               required
               placeholder="500"
-              class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-eco-500 transition"
+              class="cds--text-input"
             />
           </div>
         </div>
 
         <!-- Pricing & Donation -->
-        <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-          <div class="flex items-center justify-between mb-3">
-            <label class="text-xs font-semibold text-slate-300">Type de cession</label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" v-model="form.is_free_donation" class="rounded bg-slate-900 border-slate-700 text-eco-500 focus:ring-0" />
-              <span class="text-xs text-amber-400 font-medium">Don gratuit contre enlèvement</span>
-            </label>
+        <div class="p-4 bg-cds-layer-02 border border-cds-border-subtle">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <label class="cds--label">Type de cession</label>
+            <!-- Le don gratuit est une information « avertissement » : jeton support-warning -->
+            <div class="cds--checkbox-wrapper">
+              <input
+                id="listing-free-donation"
+                type="checkbox"
+                class="cds--checkbox"
+                v-model="form.is_free_donation"
+              />
+              <label for="listing-free-donation" class="cds--checkbox-label text-cds-support-warning">
+                Don gratuit contre enlèvement
+              </label>
+            </div>
           </div>
 
-          <div v-if="!form.is_free_donation">
-            <label class="block text-xs text-slate-400 mb-1">
+          <div v-if="!form.is_free_donation" class="cds--form-item">
+            <label class="cds--label" for="listing-price">
               Prix unitaire demandé (en FCFA / {{ selectedCategoryUnit }})
             </label>
             <input
+              id="listing-price"
               v-model.number="form.price_per_unit"
               type="number"
               step="0.01"
               min="0"
               required
-              class="w-full px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-eco-500"
+              class="cds--text-input"
             />
           </div>
         </div>
 
         <!-- Location & Geocoding -->
         <div class="space-y-3">
-          <label class="block text-xs font-semibold text-slate-300">Localisation du gisement</label>
-          <div class="flex space-x-2">
-            <input
-              v-model="searchAddressQuery"
-              type="text"
-              placeholder="Rechercher une adresse / ville pour géocoder..."
-              class="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-eco-500"
-            />
-            <button
-              @click="searchAddress"
-              type="button"
-              :disabled="geocoding"
-              class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition"
-            >
-              {{ geocoding ? 'Recherche...' : 'Géocoder' }}
-            </button>
+          <div class="cds--form-item">
+            <label class="cds--label" for="listing-address-query">Localisation du gisement</label>
+            <div class="flex gap-2">
+              <input
+                id="listing-address-query"
+                v-model="searchAddressQuery"
+                type="text"
+                placeholder="Rechercher une adresse / ville pour géocoder..."
+                class="cds--text-input"
+              />
+              <button
+                @click="searchAddress"
+                type="button"
+                :disabled="geocoding"
+                class="cds--btn cds--btn--secondary shrink-0"
+              >
+                {{ geocoding ? 'Recherche...' : 'Géocoder' }}
+              </button>
+            </div>
           </div>
 
           <!-- Geocoding suggestions dropdown -->
-          <div v-if="addressSuggestions.length > 0" class="p-2 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+          <div v-if="addressSuggestions.length > 0" class="p-2 bg-cds-layer-02 border border-cds-border-subtle space-y-1">
             <div
               v-for="(sug, idx) in addressSuggestions"
               :key="idx"
               @click="selectAddress(sug)"
-              class="p-2 rounded-lg hover:bg-slate-900 text-xs text-slate-300 cursor-pointer flex justify-between items-center"
+              class="p-2 hover:bg-cds-layer-hover-01 text-xs text-cds-text-secondary cursor-pointer flex justify-between items-center"
             >
               <span class="truncate pr-2">{{ sug.display_name }}</span>
-              <span class="text-[10px] text-eco-400 shrink-0 font-mono">{{ sug.lat.toFixed(3) }}, {{ sug.lng.toFixed(3) }}</span>
+              <span class="text-[10px] text-cds-link-primary shrink-0 font-mono">{{ sug.lat.toFixed(3) }}, {{ sug.lng.toFixed(3) }}</span>
             </div>
           </div>
 
           <!-- Selected Location Details -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-cds-layer-02 border border-cds-border-subtle">
             <div>
-              <span class="text-[11px] text-slate-400 block">Adresse retenue :</span>
-              <span class="text-xs text-slate-200 font-medium">{{ form.location.address_text || 'Aucune adresse sélectionnée' }}</span>
+              <span class="text-[11px] text-cds-text-helper block">Adresse retenue :</span>
+              <span class="text-xs text-cds-text-secondary font-medium">{{ form.location.address_text || 'Aucune adresse sélectionnée' }}</span>
             </div>
             <div>
-              <span class="text-[11px] text-slate-400 block">Coordonnées GPS :</span>
-              <span class="text-xs text-eco-400 font-mono">{{ form.location.lat }}, {{ form.location.lng }}</span>
+              <span class="text-[11px] text-cds-text-helper block">Coordonnées GPS :</span>
+              <span class="text-xs text-cds-link-primary font-mono">{{ form.location.lat }}, {{ form.location.lng }}</span>
             </div>
           </div>
         </div>
 
         <!-- Photos Upload via Media Service -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Photos du gisement (max 5 MB - JPEG/PNG/WEBP)</label>
-          <div class="flex items-center space-x-3">
+        <div class="cds--form-item">
+          <label class="cds--label" for="listing-photo">Photos du gisement (max 5 MB - JPEG/PNG/WEBP)</label>
+          <div class="flex items-center gap-3">
             <input
+              id="listing-photo"
               type="file"
               ref="fileInputRef"
               accept="image/jpeg,image/png,image/webp"
@@ -138,12 +159,10 @@
               @click="fileInputRef?.click()"
               type="button"
               :disabled="uploadingImage"
-              class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center space-x-2"
+              class="cds--btn cds--btn--secondary"
             >
-              <svg class="w-4 h-4 text-eco-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>{{ uploadingImage ? 'Upload en cours...' : 'Ajouter une photo' }}</span>
+              <Lineicons :icon="Icons.upload" :size="16" color="currentColor" />
+              <span class="ml-2">{{ uploadingImage ? 'Upload en cours...' : 'Ajouter une photo' }}</span>
             </button>
           </div>
 
@@ -152,38 +171,43 @@
             <div
               v-for="(url, idx) in form.images_urls"
               :key="idx"
-              class="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-800"
+              class="relative w-20 h-20 overflow-hidden border border-cds-border-subtle"
             >
               <img :src="url" class="w-full h-full object-cover" />
               <button
                 @click="form.images_urls.splice(idx, 1)"
                 type="button"
-                class="absolute top-1 right-1 p-1 bg-red-600/80 hover:bg-red-600 text-white rounded-full text-[10px]"
+                aria-label="Retirer cette photo"
+                title="Retirer cette photo"
+                class="absolute top-0 right-0 p-1 bg-cds-danger text-cds-text-on-color"
               >
-                ✕
+                <Lineicons :icon="Icons.close" :size="14" color="currentColor" />
               </button>
             </div>
           </div>
         </div>
 
         <!-- Description -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Description & Conditionnement</label>
+        <div class="cds--form-item">
+          <label class="cds--label" for="listing-description">Description & Conditionnement</label>
           <textarea
+            id="listing-description"
             v-model="form.description"
             rows="3"
             placeholder="Ex: Matière propre, stockée sous abri, disponible sur palettes."
-            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-eco-500 transition"
+            class="cds--text-area"
           ></textarea>
         </div>
 
         <button
           type="submit"
           :disabled="submitting"
-          class="w-full py-3.5 px-4 rounded-xl font-bold text-white bg-eco-600 hover:bg-eco-500 shadow-lg shadow-eco-600/30 transition disabled:opacity-50 flex items-center justify-center space-x-2"
+          class="cds--btn cds--btn--primary cds--btn--full justify-center"
         >
-          <span v-if="submitting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          <span>Publier le gisement</span>
+          <span class="flex items-center justify-center">
+            <span v-if="submitting" class="eco-spinner w-4 h-4 mr-2"></span>
+            <span>Publier le gisement</span>
+          </span>
         </button>
       </form>
     </div>
@@ -192,6 +216,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { Lineicons } from '@lineiconshq/vue-lineicons'
+import { Icons } from '~/utils/icons'
 import type { WasteCategory } from '~/types'
 
 const { apiFetch } = useApi()

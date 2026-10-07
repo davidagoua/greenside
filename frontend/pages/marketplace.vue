@@ -1,55 +1,74 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Top Filter & Controls -->
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-6 shadow-xl">
+    <!-- Panneau de filtres -->
+    <div class="bg-cds-layer-01 border border-cds-border-subtle p-5 mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Matière / Catégorie</label>
-          <select
-            v-model="selectedCategory"
-            @change="fetchListings"
-            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:outline-none focus:border-eco-500 transition"
-          >
-            <option value="">Toutes les matières</option>
-            <option v-for="cat in categories" :key="cat.id" :value="cat.slug">
-              {{ cat.name }} ({{ cat.unit }})
-            </option>
-          </select>
+        <div class="cds--form-item">
+          <label class="cds--label" for="filtre-matiere">Matière / Catégorie</label>
+          <div class="cds--select">
+            <div class="cds--select-input__wrapper">
+              <select
+                id="filtre-matiere"
+                v-model="selectedCategory"
+                @change="fetchListings"
+                class="cds--select-input"
+              >
+                <option value="">Toutes les matières</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.slug">
+                  {{ cat.name }} ({{ cat.unit }})
+                </option>
+              </select>
+              <Lineicons
+                class="cds--select__arrow"
+                :icon="Icons.expand"
+                :size="16"
+                color="var(--cds-icon-primary)"
+              />
+            </div>
+          </div>
         </div>
 
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <label class="text-xs font-semibold text-slate-300">Rayon géographique</label>
-            <span class="text-xs font-bold text-eco-400 font-mono">{{ radiusKm }} km</span>
+        <div class="cds--form-item">
+          <div class="flex justify-between items-center">
+            <label class="cds--label" for="filtre-rayon">Rayon géographique</label>
+            <span class="text-xs font-bold font-mono text-cds-link-primary">{{ radiusKm }} km</span>
           </div>
           <input
+            id="filtre-rayon"
             v-model.number="radiusKm"
             @change="fetchListings"
             type="range"
             min="5"
             max="150"
             step="5"
-            class="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-eco-500"
+            class="w-full cursor-pointer accent-[var(--cds-interactive)]"
           />
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Position centrale (GPS)</label>
+        <div class="cds--form-item">
+          <label class="cds--label" for="filtre-lat">Position centrale (GPS)</label>
           <div class="flex space-x-2">
-            <input
-              v-model.number="centerLat"
-              type="number"
-              step="0.001"
-              placeholder="Lat"
-              class="w-1/2 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono"
-            />
-            <input
-              v-model.number="centerLng"
-              type="number"
-              step="0.001"
-              placeholder="Lng"
-              class="w-1/2 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono"
-            />
+            <div class="w-1/2">
+              <input
+                id="filtre-lat"
+                v-model.number="centerLat"
+                type="number"
+                step="0.001"
+                placeholder="Lat"
+                aria-label="Latitude"
+                class="cds--text-input font-mono placeholder:text-cds-text-placeholder"
+              />
+            </div>
+            <div class="w-1/2">
+              <input
+                v-model.number="centerLng"
+                type="number"
+                step="0.001"
+                placeholder="Lng"
+                aria-label="Longitude"
+                class="cds--text-input font-mono placeholder:text-cds-text-placeholder"
+              />
+            </div>
           </div>
         </div>
 
@@ -57,18 +76,18 @@
           <button
             @click="useCurrentLocation"
             type="button"
-            class="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center space-x-1.5"
+            class="cds--btn cds--btn--secondary flex-1"
           >
-            <svg class="w-4 h-4 text-eco-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            </svg>
-            <span>Me localiser</span>
+            <span class="flex items-center space-x-2">
+              <Lineicons :icon="Icons.location" :size="16" color="currentColor" />
+              <span>Me localiser</span>
+            </span>
           </button>
 
           <button
             @click="fetchListings"
             type="button"
-            class="px-4 py-2.5 rounded-xl bg-eco-600 hover:bg-eco-500 text-white text-xs font-bold transition shadow-lg shadow-eco-600/20"
+            class="cds--btn cds--btn--primary"
           >
             Filtrer
           </button>
@@ -76,9 +95,9 @@
       </div>
     </div>
 
-    <!-- Main Content: Map + synchronized listings list -->
+    <!-- Contenu principal : carte + liste synchronisées -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-      <!-- Interactive Leaflet Map (7 cols on large screens) -->
+      <!-- Carte Leaflet interactive (7 colonnes sur grand écran) -->
       <div class="lg:col-span-7 h-[420px] lg:h-[650px] sticky top-24">
         <ClientOnly>
           <MarketMap
@@ -89,29 +108,29 @@
             @select-listing="handleSelectListing"
           />
           <template #fallback>
-            <div class="w-full h-full rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center">
-              <span class="text-xs text-slate-500">Chargement de la carte...</span>
+            <div class="w-full h-full bg-cds-layer-01 border border-cds-border-subtle flex items-center justify-center">
+              <span class="text-xs text-cds-text-helper">Chargement de la carte...</span>
             </div>
           </template>
         </ClientOnly>
       </div>
 
-      <!-- Synchronized Listings List (5 cols) -->
+      <!-- Liste synchronisée (5 colonnes) -->
       <div class="lg:col-span-5 space-y-4">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">
+        <div class="flex items-center justify-between pb-2 border-b border-cds-border-subtle">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-cds-text-helper">
             Gisements disponibles ({{ listings.length }})
           </h2>
-          <span class="text-xs text-eco-400 font-medium">Classés par proximité</span>
+          <span class="text-xs font-medium text-cds-link-primary">Classés par proximité</span>
         </div>
 
         <div v-if="loading" class="py-12 flex justify-center">
-          <div class="w-8 h-8 border-4 border-eco-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="eco-spinner w-8 h-8"></span>
         </div>
 
-        <div v-else-if="listings.length === 0" class="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-          <p class="text-sm text-slate-400">Aucun gisement trouvé dans ce rayon.</p>
-          <p class="text-xs text-slate-500 mt-1">Élargissez le rayon de recherche ou changez de matière.</p>
+        <div v-else-if="listings.length === 0" class="p-8 bg-cds-layer-01 border border-cds-border-subtle text-center">
+          <p class="text-sm text-cds-text-helper">Aucun gisement trouvé dans ce rayon.</p>
+          <p class="text-xs text-cds-text-helper mt-1">Élargissez le rayon de recherche ou changez de matière.</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -119,61 +138,63 @@
             v-for="item in listings"
             :key="item.id"
             :id="`listing-card-${item.id}`"
-            class="p-4 rounded-2xl bg-slate-900 border transition hover:border-eco-500/50 cursor-pointer"
-            :class="selectedListingId === item.id ? 'border-eco-500 bg-slate-850' : 'border-slate-800'"
+            class="p-4 bg-cds-layer-01 border transition cursor-pointer"
+            :class="selectedListingId === item.id
+              ? 'border-cds-border-interactive bg-cds-layer-hover-01'
+              : 'border-cds-border-subtle hover:border-cds-border-interactive'"
             @click="selectedListingId = item.id"
           >
             <div class="flex gap-4">
-              <!-- Thumbnail -->
-              <div class="w-20 h-20 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden shrink-0">
+              <!-- Vignette -->
+              <div class="w-20 h-20 bg-cds-background border border-cds-border-subtle overflow-hidden shrink-0">
                 <img
                   v-if="item.thumbnail_url"
                   :src="item.thumbnail_url"
                   :alt="item.title"
                   class="w-full h-full object-cover"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-slate-600 text-[10px]">
+                <div v-else class="w-full h-full flex items-center justify-center text-cds-text-helper text-[10px]">
                   Pas d'image
                 </div>
               </div>
 
-              <!-- Details -->
+              <!-- Détails -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between">
-                  <h3 class="text-sm font-bold text-white truncate pr-2">{{ item.title }}</h3>
-                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-eco-400 shrink-0">
-                    {{ item.distance_km.toFixed(1) }} km
+                  <h3 class="text-sm font-bold text-cds-text-primary truncate pr-2">{{ item.title }}</h3>
+                  <span class="text-[11px] font-mono px-2 py-0.5 bg-cds-layer-02 border border-cds-border-subtle text-cds-link-primary shrink-0">
+                    {{ formatNumber(item.distance_km, 1) }} km
                   </span>
                 </div>
 
                 <div class="flex items-center space-x-2 mt-1">
-                  <span class="text-xs font-semibold text-slate-200">
-                    {{ item.estimated_quantity }} {{ item.unit }}
+                  <span class="text-xs font-semibold text-cds-text-secondary">
+                    {{ formatQuantity(item.estimated_quantity, item.unit) }}
                   </span>
-                  <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                  <span class="text-[10px] text-cds-text-helper bg-cds-background px-2 py-0.5 border border-cds-border-subtle">
                     {{ item.category_name }}
                   </span>
                 </div>
 
-                <p class="text-xs text-slate-400 truncate mt-1">📍 {{ item.address_text }}</p>
+                <p class="text-xs text-cds-text-helper truncate mt-1">📍 {{ item.address_text }}</p>
 
                 <div class="mt-3 flex items-center justify-between">
-                  <div class="text-xs font-bold" :class="item.is_free_donation ? 'text-amber-400' : 'text-eco-400'">
-                    {{ item.is_free_donation ? 'Don gratuit' : `${item.price_per_unit} FCFA / ${item.unit}` }}
+                  <div class="text-xs font-bold" :class="item.is_free_donation ? 'text-cds-support-warning' : 'text-cds-link-primary'">
+                    {{ item.is_free_donation ? 'Don gratuit' : `${formatMoney(item.price_per_unit)} / ${item.unit}` }}
                   </div>
 
                   <button
                     v-if="user?.role === 'collector'"
                     @click.stop="openReserveModal(item)"
                     type="button"
-                    class="px-3 py-1.5 rounded-lg bg-eco-600 hover:bg-eco-500 text-white text-xs font-semibold transition shadow-md shadow-eco-600/20"
+                    class="cds--btn cds--btn--primary cds--btn--sm"
                   >
                     Réserver
                   </button>
                   <NuxtLink
                     v-else
                     :to="`/marketplace`"
-                    class="text-xs text-slate-400 hover:text-white"
+                    class="text-xs text-cds-text-helper hover:text-cds-text-primary"
                   >
                     Voir détails
                   </NuxtLink>
@@ -185,50 +206,78 @@
       </div>
     </div>
 
-    <!-- Reservation Modal for Collectors -->
-    <div v-if="reservingListing" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl">
-        <h3 class="text-lg font-bold text-white">Confirmer la réservation & séquestre</h3>
-        <p class="text-xs text-slate-400 mt-1">
-          Gisement : <b class="text-slate-200">{{ reservingListing.title }}</b>
-        </p>
+    <!-- Modale de réservation (collecteurs) -->
+    <div
+      v-if="reservingListing"
+      class="cds--modal cds--modal--enable-presence"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titre-modale-reservation"
+    >
+      <div class="cds--modal-container cds--modal-container--sm">
+        <header class="cds--modal-header">
+          <h2 id="titre-modale-reservation" class="cds--modal-header__heading">
+            Confirmer la réservation & séquestre
+          </h2>
+          <button
+            class="cds--modal-close"
+            type="button"
+            aria-label="Fermer"
+            @click="reservingListing = null"
+          >
+            <Lineicons
+              class="cds--modal-close__icon"
+              :icon="Icons.close"
+              :size="20"
+              color="currentColor"
+            />
+          </button>
+        </header>
 
-        <div class="mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-          <div class="flex justify-between">
-            <span class="text-slate-400">Quantité disponible :</span>
-            <span class="font-semibold text-white">{{ reservingListing.estimated_quantity }} {{ reservingListing.unit }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400">Prix unitaire :</span>
-            <span class="font-semibold text-white">
-              {{ reservingListing.is_free_donation ? '0 (Don)' : reservingListing.price_per_unit + ' FCFA' }}
-            </span>
-          </div>
-          <div class="flex justify-between border-t border-slate-800 pt-2 font-bold">
-            <span class="text-eco-400">Montant total séquestré :</span>
-            <span class="text-eco-400">
-              {{ (reservingListing.estimated_quantity * (reservingListing.is_free_donation ? 0 : reservingListing.price_per_unit)).toLocaleString() }} FCFA
-            </span>
+        <div class="cds--modal-content">
+          <p class="text-xs text-cds-text-helper">
+            Gisement : <b class="text-cds-text-secondary">{{ reservingListing.title }}</b>
+          </p>
+
+          <div class="mt-4 p-4 bg-cds-background border border-cds-border-subtle space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-cds-text-helper">Quantité disponible :</span>
+              <span class="font-semibold text-cds-text-primary">
+                {{ formatQuantity(reservingListing.estimated_quantity, reservingListing.unit) }}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-cds-text-helper">Prix unitaire :</span>
+              <span class="font-semibold text-cds-text-primary">
+                {{ reservingListing.is_free_donation ? '0 (Don)' : formatMoney(reservingListing.price_per_unit) }}
+              </span>
+            </div>
+            <div class="flex justify-between border-t border-cds-border-subtle pt-2 font-bold">
+              <span class="text-cds-link-primary">Montant total séquestré :</span>
+              <span class="text-cds-link-primary">
+                {{ formatMoney((toNumber(reservingListing.estimated_quantity) ?? 0) * (reservingListing.is_free_donation ? 0 : (toNumber(reservingListing.price_per_unit) ?? 0))) }}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div class="mt-6 flex space-x-3">
+        <footer class="cds--modal-footer">
           <button
-            @click="reservingListing = null"
+            class="cds--btn cds--btn--secondary"
             type="button"
-            class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+            @click="reservingListing = null"
           >
             Annuler
           </button>
           <button
-            @click="confirmReservation"
-            :disabled="actionLoading"
+            class="cds--btn cds--btn--primary"
             type="button"
-            class="flex-1 py-2.5 rounded-xl bg-eco-600 hover:bg-eco-500 text-white text-xs font-semibold transition shadow-lg shadow-eco-600/20 disabled:opacity-50"
+            :disabled="actionLoading"
+            @click="confirmReservation"
           >
             {{ actionLoading ? 'Verrouillage séquestre...' : 'Confirmer séquestre' }}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   </div>
@@ -236,10 +285,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Lineicons } from '@lineiconshq/vue-lineicons'
+import { Icons } from '~/utils/icons'
 import type { NearbyListing, WasteCategory } from '~/types'
 
 const { user } = useAuth()
 const { apiFetch } = useApi()
+// Les champs NUMERIC de l'API arrivent en chaîne : tout affichage numérique
+// (montants, quantités) passe par useFormat(), jamais par de l'arithmétique brute.
+const { formatMoney, formatNumber, formatQuantity, toNumber } = useFormat()
 
 const categories = ref<WasteCategory[]>([])
 const listings = ref<NearbyListing[]>([])

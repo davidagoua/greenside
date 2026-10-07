@@ -1,109 +1,136 @@
 <template>
   <div class="min-h-[85vh] flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl shadow-slate-950/80">
-      <!-- Tabs Switcher -->
-      <div class="flex rounded-xl bg-slate-950 p-1 mb-8 border border-slate-800">
+    <div class="w-full max-w-md bg-cds-layer-01 border border-cds-border-subtle p-8">
+      <!-- Sélecteur de mode : contrôle segmenté, 100 % jetons Carbon -->
+      <div
+        class="flex bg-cds-layer-02 border border-cds-border-subtle mb-8"
+        role="tablist"
+        aria-label="Connexion ou inscription"
+      >
         <button
           @click="mode = 'login'"
           type="button"
-          class="flex-1 py-2 text-xs font-semibold rounded-lg transition"
-          :class="mode === 'login' ? 'bg-eco-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+          role="tab"
+          :aria-selected="mode === 'login'"
+          class="flex-1 py-2 text-xs font-semibold border-b-2 transition-colors"
+          :class="mode === 'login'
+            ? 'bg-cds-background-selected border-cds-border-interactive text-cds-text-primary'
+            : 'border-transparent text-cds-text-helper hover:bg-cds-layer-hover-01 hover:text-cds-text-primary'"
         >
           Connexion
         </button>
         <button
           @click="mode = 'register'"
           type="button"
-          class="flex-1 py-2 text-xs font-semibold rounded-lg transition"
-          :class="mode === 'register' ? 'bg-eco-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+          role="tab"
+          :aria-selected="mode === 'register'"
+          class="flex-1 py-2 text-xs font-semibold border-b-2 transition-colors"
+          :class="mode === 'register'
+            ? 'bg-cds-background-selected border-cds-border-interactive text-cds-text-primary'
+            : 'border-transparent text-cds-text-helper hover:bg-cds-layer-hover-01 hover:text-cds-text-primary'"
         >
           Inscription
         </button>
       </div>
 
       <div class="text-center mb-6">
-        <h1 class="text-2xl font-bold text-white tracking-tight">
+        <h1 class="text-2xl font-bold text-cds-text-primary tracking-tight">
           {{ mode === 'login' ? 'Bon retour sur EcoLoop' : 'Créer un compte' }}
         </h1>
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="text-xs text-cds-text-helper mt-1">
           {{ mode === 'login' ? 'Connectez-vous pour accéder à vos transactions' : 'Rejoignez la chaîne de valorisation circulaire' }}
         </p>
       </div>
 
-      <!-- Error banner -->
-      <div v-if="error" class="mb-5 p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-200 text-xs flex items-center space-x-2">
-        <svg class="w-4 h-4 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span>{{ error }}</span>
+      <!-- Bandeau d'erreur : filet latéral d'état Carbon -->
+      <div
+        v-if="error"
+        role="alert"
+        class="mb-5 p-3 bg-cds-layer-01 border-l-2 border-cds-support-error flex items-center space-x-2"
+      >
+        <Lineicons
+          :icon="Icons.error"
+          :size="16"
+          color="currentColor"
+          class="shrink-0 text-cds-support-error"
+        />
+        <span class="text-xs text-cds-support-error">{{ error }}</span>
       </div>
 
-      <!-- Form -->
+      <!-- Formulaire -->
       <form @submit.prevent="handleSubmit" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Email professionnel</label>
+        <div class="cds--form-item">
+          <label class="cds--label" for="auth-email">Email professionnel</label>
           <input
+            id="auth-email"
             v-model="form.email"
             type="email"
             required
             placeholder="contact@entreprise.com"
-            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-eco-500 text-sm transition"
+            class="cds--text-input placeholder:text-cds-text-placeholder"
           />
         </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Mot de passe</label>
+        <div class="cds--form-item">
+          <label class="cds--label" for="auth-password">Mot de passe</label>
           <input
+            id="auth-password"
             v-model="form.password"
             type="password"
             required
             placeholder="Min. 8 caractères, 1 chiffre"
-            class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-eco-500 text-sm transition"
+            class="cds--text-input placeholder:text-cds-text-placeholder"
           />
         </div>
 
         <template v-if="mode === 'register'">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Votre rôle principal</label>
+            <div class="cds--label">Votre rôle principal</div>
             <div class="grid grid-cols-2 gap-3">
               <label
-                class="flex flex-col items-center justify-center p-3 rounded-xl border cursor-pointer transition text-center"
-                :class="form.role === 'producer' ? 'bg-eco-950/60 border-eco-500 text-eco-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'"
+                class="flex flex-col items-center justify-center p-3 border cursor-pointer transition text-center"
+                :class="form.role === 'producer'
+                  ? 'bg-cds-background-selected border-cds-border-interactive text-cds-text-primary'
+                  : 'bg-cds-background border-cds-border-subtle text-cds-text-helper hover:border-cds-border-strong'"
               >
                 <input type="radio" value="producer" v-model="form.role" class="sr-only" />
                 <span class="text-sm font-bold">Producteur</span>
-                <span class="text-[10px] text-slate-400 mt-0.5">Je génère des déchets</span>
+                <span class="text-[10px] text-cds-text-helper mt-0.5">Je génère des déchets</span>
               </label>
 
               <label
-                class="flex flex-col items-center justify-center p-3 rounded-xl border cursor-pointer transition text-center"
-                :class="form.role === 'collector' ? 'bg-eco-950/60 border-eco-500 text-eco-300' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'"
+                class="flex flex-col items-center justify-center p-3 border cursor-pointer transition text-center"
+                :class="form.role === 'collector'
+                  ? 'bg-cds-background-selected border-cds-border-interactive text-cds-text-primary'
+                  : 'bg-cds-background border-cds-border-subtle text-cds-text-helper hover:border-cds-border-strong'"
               >
                 <input type="radio" value="collector" v-model="form.role" class="sr-only" />
                 <span class="text-sm font-bold">Collecteur</span>
-                <span class="text-[10px] text-slate-400 mt-0.5">Je collecte & valorise</span>
+                <span class="text-[10px] text-cds-text-helper mt-0.5">Je collecte & valorise</span>
               </label>
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Nom de l'organisation / Entreprise</label>
+          <div class="cds--form-item">
+            <label class="cds--label" for="auth-organization">Nom de l'organisation / Entreprise</label>
             <input
+              id="auth-organization"
               v-model="form.organization_name"
               type="text"
               placeholder="Ex: Plastique Recyclage SA"
-              class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-eco-500 text-sm transition"
+              class="cds--text-input placeholder:text-cds-text-placeholder"
             />
           </div>
 
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Numéro de téléphone (avec indicatif)</label>
+          <div class="cds--form-item">
+            <label class="cds--label" for="auth-phone">Numéro de téléphone (avec indicatif)</label>
             <input
+              id="auth-phone"
               v-model="form.phone"
               type="tel"
               required
               placeholder="+221 77 123 45 67"
-              class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-eco-500 text-sm transition"
+              class="cds--text-input placeholder:text-cds-text-placeholder"
             />
           </div>
         </template>
@@ -111,10 +138,18 @@
         <button
           type="submit"
           :disabled="loading"
-          class="w-full py-3 px-4 rounded-xl font-semibold text-white bg-eco-600 hover:bg-eco-500 shadow-lg shadow-eco-600/30 transition disabled:opacity-50 flex items-center justify-center space-x-2 text-sm mt-6"
+          class="cds--btn cds--btn--primary cds--btn--full mt-6"
         >
-          <span v-if="loading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          <span>{{ mode === 'login' ? 'Se connecter' : "S'inscrire" }}</span>
+          <span class="flex items-center space-x-2">
+            <Lineicons
+              v-if="loading"
+              :icon="Icons.loading"
+              :size="16"
+              color="currentColor"
+              class="animate-spin"
+            />
+            <span>{{ mode === 'login' ? 'Se connecter' : "S'inscrire" }}</span>
+          </span>
         </button>
       </form>
     </div>
@@ -123,6 +158,8 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { Lineicons } from '@lineiconshq/vue-lineicons'
+import { Icons } from '~/utils/icons'
 
 const mode = ref<'login' | 'register'>('login')
 const loading = ref(false)
@@ -138,6 +175,7 @@ const form = reactive({
 
 const { setAuth } = useAuth()
 const config = useRuntimeConfig()
+const route = useRoute()
 
 const handleSubmit = async () => {
   loading.value = true
@@ -161,7 +199,14 @@ const handleSubmit = async () => {
     })
 
     setAuth(res.access_token, res.user)
-    navigateTo('/marketplace')
+
+    // Retour à la page protégée demandée, sinon atterrissage selon le rôle
+    const redirect = route.query.redirect
+    if (typeof redirect === 'string' && redirect.startsWith('/')) {
+      await navigateTo(redirect)
+    } else {
+      await navigateTo(res.user?.role === 'admin' ? '/admin' : '/marketplace')
+    }
   } catch (err: any) {
     error.value = err.response?._data?.detail || err.message || 'Une erreur est survenue'
   } finally {

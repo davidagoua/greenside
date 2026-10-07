@@ -1,26 +1,217 @@
+/* -----------------------------------------------------------------------------
+ * IBM Plex — typographie du design system Carbon.
+ * Auto-hébergée (pas de CDN) pour rester disponible hors ligne en PWA.
+ * -------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/IBMPlexSans-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/IBMPlexSans-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/IBMPlexSans-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/IBMPlexMono-Regular.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* -----------------------------------------------------------------------------
+ * Base — toutes les couleurs proviennent des jetons Carbon (--cds-*), donc le
+ * thème clair/sombre est piloté par la classe posée sur <html> :
+ *   .cds--g10 (clair) | .cds--g100 (sombre)   → voir composables/useTheme.ts
+ * Aucune couleur en dur ici, sinon le thème clair casse.
+ * -------------------------------------------------------------------------- */
 @layer base {
+  html {
+    @apply bg-cds-background;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen selection:bg-eco-500 selection:text-white;
+    @apply bg-cds-background text-cds-text-primary antialiased min-h-screen;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Carbon définit line-height: 1 dans son reset, trop serré pour du texte courant */
+    line-height: 1.4;
+  }
+
+  ::selection {
+    @apply bg-cds-highlight text-cds-text-primary;
+  }
+
+  /* Anneau de focus Carbon */
+  :focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: -2px;
   }
 }
 
-/* Custom scrollbars */
+/* -----------------------------------------------------------------------------
+ * Composants utilitaires réutilisés dans toute l'application.
+ * -------------------------------------------------------------------------- */
+@layer components {
+  /* Carte / surface Carbon (remplace les anciens bg-slate-900 border-slate-800) */
+  .eco-surface {
+    @apply bg-cds-layer-01 border border-cds-border-subtle;
+  }
+
+  /* Étiquette de statut sobre (les statuts métier utilisent cds--tag) */
+  .eco-chip {
+    @apply inline-flex items-center px-2 py-0.5 text-[11px] font-medium
+           border border-cds-border-subtle text-cds-text-secondary bg-cds-layer-02;
+  }
+
+  /* Indicateur de chargement basé sur les jetons de thème */
+  .eco-spinner {
+    @apply inline-block rounded-full animate-spin;
+    border: 2px solid var(--cds-border-subtle);
+    border-top-color: var(--cds-interactive);
+  }
+
+  /* Entrée de la barre de navigation mobile */
+  .eco-tab {
+    @apply flex flex-col items-center justify-center py-2 transition-colors;
+  }
+}
+
+/* Barres de défilement alignées sur le thème */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--cds-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 9999px;
+  background: var(--cds-border-strong);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: var(--cds-interactive);
 }
+
+/* -----------------------------------------------------------------------------
+ * Ajustements pour l'intégration des classes Carbon avec Tailwind.
+ * -------------------------------------------------------------------------- */
+
+/* Carbon limite la largeur des boutons : on la neutralise pour permettre les
+   boutons pleine largeur des formulaires mobiles. */
+.cds--btn {
+  max-width: none;
+}
+
+.cds--btn--full {
+  width: 100%;
+}
+
+/* Les champs Carbon doivent occuper toute la largeur de leur conteneur */
+.cds--text-input,
+.cds--text-area,
+.cds--select,
+.cds--select-input__wrapper {
+  width: 100%;
+}
+
+/* Carbon réserve une marge basse aux form-items : on la gère avec Tailwind */
+.cds--form-item {
+  margin-bottom: 0;
+}
+
+/* La grille mobile de la bottom-nav impose une marge basse (cf. layouts/default.vue) */
+@media (max-width: 767px) {
+  .cds--modal-container {
+    max-height: 90vh;
+  }
+}
+
+/*
+ * IMPORTANT — visibilité des modales Carbon.
+ * Carbon masque `.cds--modal:not(.cds--modal--enable-presence)` (opacity 0 +
+ * visibility hidden) et ne l'affiche qu'avec la classe `.is-visible`.
+ * Les modales de cette application sont montées/démontées par `v-if` : la
+ * présence vaut donc visibilité. On utilise le modificateur prévu par Carbon,
+ * `cds--modal--enable-presence`, qui contourne ce masquage et fournit
+ * l'animation d'entrée :
+ *
+ *   <div v-if="open" class="cds--modal cds--modal--enable-presence"> … </div>
+ *
+ * Omettre cette classe rend la modale invisible à l'écran (piège silencieux).
+ */
+
+/* -----------------------------------------------------------------------------
+ * Leaflet — les popups et contrôles sont créés hors de Vue, ils doivent donc
+ * être thémés globalement pour suivre le thème clair/sombre.
+ * -------------------------------------------------------------------------- */
+.leaflet-container {
+  background: var(--cds-background);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--cds-layer-01);
+  color: var(--cds-text-primary);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.leaflet-popup-tip {
+  background: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle);
+  box-shadow: none;
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem 1rem;
+}
+
+/* Bouton de fermeture de popup */
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--cds-icon-secondary);
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: var(--cds-icon-primary);
+}
+
+/* Contrôles de zoom et attribution */
+.leaflet-bar,
+.leaflet-bar a {
+  background: var(--cds-layer-01);
+  color: var(--cds-icon-primary);
+  border-color: var(--cds-border-subtle);
+  border-radius: 0;
+}
+
+.leaflet-bar a:hover {
+  background: var(--cds-layer-hover-01);
+  color: var(--cds-icon-primary);
+}
+
+.leaflet-control-attribution {
+  background: var(--cds-layer-01) !important;
+  color: var(--cds-text-helper);
+}
+
+.leaflet-control-attribution a {
+  color: var(--cds-link-primary);
+}
+

@@ -13,17 +13,38 @@ export default defineNuxtConfig({
     }
   },
   css: [
+    // Design system Carbon : jetons (--cds-*) + styles des composants (cds--*).
+    // Doit précéder main.css pour que les surcharges de l'application gagnent.
+    '@carbon/styles/css/styles.css',
     'leaflet/dist/leaflet.css',
     '~/assets/css/main.css'
   ],
+  features: {
+    /**
+     * Nuxt inline par défaut les styles d'entrée dans le HTML SSR. Avec Carbon
+     * (≈1 Mo de CSS) cela produisait ~1 Mo de HTML non cacheable par page.
+     * On émet à la place une feuille de style externe, mise en cache par le
+     * navigateur et précachée par le service worker.
+     */
+    inlineStyles: false
+  },
+  build: {
+    /**
+     * Lineicons est publié sans champ `exports` et uniquement en ESM/CJS
+     * minifié : externalisé par Nitro, Node ne sait pas en résoudre les exports
+     * nommés au runtime (500 en SSR). On force donc son inclusion dans les
+     * bundles client et serveur.
+     */
+    transpile: ['@lineiconshq/vue-lineicons', '@lineiconshq/free-icons']
+  },
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
       name: 'EcoLoop - Circular Hub',
       short_name: 'EcoLoop',
       description: 'Marketplace circulaire B2B/B2C pour la valorisation des déchets recyclables',
-      theme_color: '#059669',
-      background_color: '#0f172a',
+      theme_color: '#0f62fe',
+      background_color: '#ffffff',
       display: 'standalone',
       orientation: 'portrait',
       icons: [
@@ -41,13 +62,15 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      // woff2 ajouté : la typographie IBM Plex est auto-hébergée (hors ligne)
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       runtimeCaching: [
         {
-          urlPattern: /^https:\/\/.*tile\.openstreetmap\.org\/.*/i,
+          // Tuiles réellement utilisées par MarketMap (CARTO, et non OSM)
+          urlPattern: /^https:\/\/.*basemaps\.cartocdn\.com\/.*/i,
           handler: 'CacheFirst',
           options: {
-            cacheName: 'osm-tiles-cache',
+            cacheName: 'map-tiles-cache',
             expiration: {
               maxEntries: 500,
               maxAgeSeconds: 60 * 60 * 24 * 30 // 30 jours
@@ -83,7 +106,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'theme-color', content: '#059669' },
+        { name: 'theme-color', content: '#0f62fe' },
         { name: 'description', content: 'Marketplace circulaire B2B/B2C pour la collecte et valorisation des déchets' }
       ],
       link: [
